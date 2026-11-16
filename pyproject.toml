@@ -1,0 +1,19 @@
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+exclude = [
+    "k8s", 
+    "model/notebooks", 
+    "model/data",
+    ".git",
+    ".venv"
+]
+
+[tool.ruff.lint]
+select = [
+    "E",  # Errores de estilo (PEP8)
+    "W",  # Advertencias
+    "F",  # Pyflakes (variables no usadas, errores de sintaxis)
+    "I",  # Isort (ordena los imports automáticamente)
+]
+ignore = []

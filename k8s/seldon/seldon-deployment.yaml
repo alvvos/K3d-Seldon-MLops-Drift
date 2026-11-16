@@ -1,0 +1,36 @@
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: mlops-model
+  namespace: default
+spec:
+  name: model-deployment
+  predictors:
+    - name: default
+      replicas: 1
+      graph:
+        name: classifier
+        type: MODEL
+        endpoint:
+          type: REST
+      componentSpecs:
+        - spec:
+            containers:
+              - name: classifier
+                image: alvarosalis/mlops-model:v1
+                imagePullPolicy: IfNotPresent   # Solo sí no está el k3b.
+                resources:
+                  requests:
+                    cpu: "100m"      # Estos va para los CGroups del kernel.
+                    memory: "128Mi"
+                  limits:
+                    cpu: "500m"      
+                    memory: "256Mi" # Antes de que un pod acabe con la RAM, se muere y se instancia otro en su lugar.
+          hpaSpec:
+            minReplicas: 1
+            maxReplicas: 4
+            metrics:
+              - type: Resource # Relación directa entre las peticiones y el HPA.
+                resource:
+                  name: cpu
+                  targetAverageUtilization: 50  # Esto es esencial, cada 50 milicores, la mitad de lo que se definió, KB levanta una réplica, hasta 3 veces.
