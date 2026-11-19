@@ -10,6 +10,14 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
+# Notebooks
+.ipynb_checkpoints/
+
+# Artefactos binarios y datos regenerables
+model/artifacts/*.joblib
+model/data/credit_risk.csv
+drift/reports/
+
 # Entornos locales y secretos
 .env
 

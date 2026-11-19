@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mlops-model-config
+  namespace: default
+  labels:
+    app.kubernetes.io/name: credit-risk-classifier
+    app.kubernetes.io/part-of: mlops-k8s-project
+data:
+  MODEL_VERSION: "2.0.0"
+  DECISION_THRESHOLD: "0.50"
+  LOG_LEVEL: "INFO"
+  MODEL_PATH: "/app/artifacts/model.joblib"
+  METADATA_PATH: "/app/artifacts/metadata.json"

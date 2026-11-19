@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mlops-model-grafana-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/part-of: mlops-k8s-project
+data:
+  mlops-credit-risk-dashboard.json: |
+    {
+      "uid": "mlops-credit-risk",
+      "title": "MLOps - Credit Risk Classifier (Seldon Core)",
+      "tags": ["mlops", "seldon", "credit-risk"],
+      "timezone": "browser",
+      "schemaVersion": 38,
+      "version": 1,
+      "refresh": "10s",
+      "panels": [
+        {
+          "id": 1,
+          "type": "timeseries",
+          "title": "Requests por segundo (RPS)",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "targets": [
+            {
+              "expr": "sum(rate(seldon_api_executor_client_requests_seconds_count{deployment_name=\"mlops-model\"}[1m]))",
+              "legendFormat": "RPS total"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "Latencia de inferencia (p50 / p95)",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.50, sum(rate(seldon_api_executor_client_requests_seconds_bucket{deployment_name=\"mlops-model\"}[5m])) by (le))",
+              "legendFormat": "p50"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(seldon_api_executor_client_requests_seconds_bucket{deployment_name=\"mlops-model\"}[5m])) by (le))",
+              "legendFormat": "p95"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "Probabilidad media de Default (Proxy de Drift)",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+          "targets": [
+            {
+              "expr": "avg(credit_risk_avg_default_probability)",
+              "legendFormat": "avg p(default)"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "Predicciones totales vs Alto Riesgo",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+          "targets": [
+            {
+              "expr": "sum(rate(credit_risk_predictions_total[1m]))",
+              "legendFormat": "Predicciones / s"
+            },
+            {
+              "expr": "sum(rate(credit_risk_high_risk_predictions_total[1m]))",
+              "legendFormat": "Alto riesgo / s"
+            }
+          ]
+        }
+      ]
+    }

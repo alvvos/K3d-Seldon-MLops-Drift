@@ -1,0 +1,13 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mlops-model-pdb
+  namespace: default
+  labels:
+    app.kubernetes.io/name: credit-risk-classifier
+    app.kubernetes.io/part-of: mlops-k8s-project
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      seldon-deployment-id: mlops-model

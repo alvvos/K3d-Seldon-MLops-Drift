@@ -3,6 +3,9 @@ kind: Ingress
 metadata:
   name: seldon-model-ingress
   namespace: default
+  labels:
+    app.kubernetes.io/name: credit-risk-classifier
+    app.kubernetes.io/part-of: mlops-k8s-project
   annotations:
     kubernetes.io/ingress.class: traefik
 spec:
@@ -11,6 +14,13 @@ spec:
         paths:
           - path: /api/v0.1/predictions
             pathType: Prefix
+            backend:
+              service:
+                name: mlops-model-default
+                port:
+                  number: 8000
+          - path: /prometheus
+            pathType: Exact
             backend:
               service:
                 name: mlops-model-default

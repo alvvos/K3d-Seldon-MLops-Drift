@@ -3,8 +3,13 @@ kind: SeldonDeployment
 metadata:
   name: mlops-model
   namespace: default
+  labels:
+    app.kubernetes.io/name: credit-risk-classifier
+    app.kubernetes.io/part-of: mlops-k8s-project
 spec:
   name: model-deployment
+  annotations:
+    seldon.io/rest-read-timeout: "10000"
   predictors:
     - name: default
       replicas: 1
@@ -14,23 +19,47 @@ spec:
         endpoint:
           type: REST
       componentSpecs:
-        - spec:
+        - metadata:
+            annotations:
+              prometheus.io/scrape: "true"
+              prometheus.io/port: "8000"
+              prometheus.io/path: "/prometheus"
+          spec:
             containers:
               - name: classifier
-                image: alvarosalis/mlops-model:v1
-                imagePullPolicy: IfNotPresent   # Solo sí no está el k3b.
+                image: alvarosalis/mlops-model:v2
+                imagePullPolicy: IfNotPresent
+                envFrom:
+                  - configMapRef:
+                      name: mlops-model-config
                 resources:
                   requests:
-                    cpu: "100m"      # Estos va para los CGroups del kernel.
-                    memory: "128Mi"
+                    cpu: "100m"
+                    memory: "256Mi"
                   limits:
-                    cpu: "500m"      
-                    memory: "256Mi" # Antes de que un pod acabe con la RAM, se muere y se instancia otro en su lugar.
+                    cpu: "500m"
+                    memory: "512Mi"
+                readinessProbe:
+                  httpGet:
+                    path: /health/status
+                    port: 9000
+                  initialDelaySeconds: 10
+                  periodSeconds: 10
+                  timeoutSeconds: 3
+                  failureThreshold: 3
+                livenessProbe:
+                  httpGet:
+                    path: /health/ping
+                    port: 9000
+                  initialDelaySeconds: 15
+                  periodSeconds: 20
+                  timeoutSeconds: 3
+                  failureThreshold: 3
           hpaSpec:
             minReplicas: 1
             maxReplicas: 4
             metrics:
-              - type: Resource # Relación directa entre las peticiones y el HPA.
+              - type: Resource
                 resource:
                   name: cpu
-                  targetAverageUtilization: 50  # Esto es esencial, cada 50 milicores, la mitad de lo que se definió, KB levanta una réplica, hasta 3 veces.
+                  targetAverageUtilization: 50

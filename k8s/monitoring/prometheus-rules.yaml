@@ -1,0 +1,51 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mlops-model-alerts
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: credit-risk-classifier
+    app.kubernetes.io/part-of: mlops-k8s-project
+spec:
+  groups:
+    - name: mlops.model.serving
+      rules:
+        - alert: MLOpsModelHighLatencyP95
+          expr: |
+            histogram_quantile(
+              0.95,
+              sum(rate(seldon_api_executor_client_requests_seconds_bucket{deployment_name="mlops-model"}[5m])) by (le)
+            ) > 0.5
+          for: 2m
+          labels:
+            severity: warning
+            service: mlops-model
+          annotations:
+            summary: "Latencia p95 elevada en inferencia Seldon"
+            description: "La latencia p95 del modelo mlops-model supera 500ms durante los últimos 2 minutos."
+
+        - alert: MLOpsModelHighErrorRate
+          expr: |
+            (
+              sum(rate(seldon_api_executor_client_requests_seconds_count{deployment_name="mlops-model",code=~"5.."}[5m]))
+              /
+              clamp_min(sum(rate(seldon_api_executor_client_requests_seconds_count{deployment_name="mlops-model"}[5m])), 1e-6)
+            ) > 0.05
+          for: 2m
+          labels:
+            severity: critical
+            service: mlops-model
+          annotations:
+            summary: "Tasa de errores 5xx elevada en mlops-model"
+            description: "Más del 5% de las peticiones de inferencia devolvieron error 5xx en los últimos 5 minutos."
+
+        - alert: MLOpsModelHighDefaultRiskSpike
+          expr: |
+            avg(credit_risk_avg_default_probability) > 0.55
+          for: 5m
+          labels:
+            severity: warning
+            service: mlops-model
+          annotations:
+            summary: "Posible Prediction Drift: probabilidad media de default elevada"
+            description: "La probabilidad media de impago predicha supera 0.55 durante 5 minutos. Revisar auditoría de Data Drift."
